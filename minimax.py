@@ -7,7 +7,7 @@ class minimax():
         return next_state
     
     def get_value(self, state, parameter):
-        # input : state
+        # input : state, parameter
         # output: value
         
         return 1
