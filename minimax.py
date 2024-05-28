@@ -1,4 +1,14 @@
 class minimax():
+    '''
+    state:
+    state.state = [set(),set()] # [ black, white ]
+    state.round 
+    state.get_Action()
+    state.get_NextState(action)
+    state.isLose()
+    state.isWin()
+    '''
+    
     def Next_state(self, state): 
         '''
         input : state

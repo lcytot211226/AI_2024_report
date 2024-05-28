@@ -16,7 +16,7 @@ class chessboard():
     
     def get_Action(self):
         '''
-        input : color(0/1), round
+        input : round
         output: actions
         '''
         
@@ -27,25 +27,21 @@ class chessboard():
                 
         # put/move chess and maybe remove other chess
         actions = [] # action = [ add, remove ], add={(x,y,color),...}
-        if len(self.state[color]) == 3: # there's only 3 chesses
-            for movefrom in self.state[color]:
-                for moveto in unused_posi:
-                    if(self.is_line(movefrom, moveto)):
-                        for remove in self.state[1-color]:
-                            actions.append([{(moveto[0],moveto[1],color)},
-                                            {(movefrom[0],movefrom[1],color), (remove[0],remove[1],1-color)}])
-                    else:
-                        actions.append([{(moveto[0],moveto[1],color)},
-                                        {(movefrom[0],movefrom[1],color)}])
-        elif round < 18: # place stage
+        if round < 18: # place stage
             action = [[],[]]
-        else:             # normal stage
+            
+            
+            
+            actions.append(action)
+        else:          # normal stage
             action = [[],[]]
+            
+            actions.append(action)
             
         return actions
     
     def get_NextState(self, action): 
-        # input : color, action, round
+        # input : action
         # output: next_chessboard
         
         color = self.round % 2
@@ -59,10 +55,17 @@ class chessboard():
             next_chessboard.state[color].remove((x,y))
             next_chessboard.used_posi.remove((x,y))
         
+        next_chessboard.round += 1
         
+        if next_chessboard.round >= 18:
+            if len(action[0])+len(action[1]) == 0:
+                self.lose = True
+            elif len(self.state[color]) <= 3:
+                self.lose = True
+            elif len(self.state[1-color]) <= 3:
+                self.win  = True
         
-        
-        return []
+        return next_chessboard
 
     def isLose(self):
         return self.lose
