@@ -11,7 +11,8 @@ class chessboard():
     
     def __init__(self):
         self.state = [set(),set()] # [ black, white ]
-        self.round = int(0)
+        self.round = 0
+        self.chase_time = 0
         self.lose = False
         self.win  = False
         self.used_posi = set()
@@ -28,7 +29,7 @@ class chessboard():
         unused_posi = self.all_posi - self.used_posi
                 
         # put/move chess and maybe remove other chess
-        actions = set() # action = [ add, remove ], add={(x,y,color),...}
+        actions = set() # action = ( add, remove ), add={(x,y,color),...}
         
         if self.round < 18:
             # place stage
@@ -36,7 +37,7 @@ class chessboard():
                 ADD = (add[0], add[1], color)
                 
                 # enter eat stage or not
-                if self.get_NextState([{ADD}, set()]).in_line(ADD):
+                if self.get_NextState(({ADD}, set())).in_line(ADD):
                     for remove in self.state[1-color]:
                         REMOVE = (remove[0], remove[1], 1-color)
                         if not self.in_line(REMOVE):
@@ -50,6 +51,7 @@ class chessboard():
             # normal stage
             for movefrom in self.state[color]:
                 moveto_set = self.__where_to_move(movefrom)
+                # print(moveto_set)
                 for moveto in moveto_set:
                     MOVETO = (moveto[0], moveto[1], color)
                     MOVEFROM = (movefrom[0], movefrom[1], color)
@@ -70,26 +72,35 @@ class chessboard():
         # input : action
         # output: next_chessboard
         
-        next_chessboard = copy.deepcopy(self)
+        next = copy.deepcopy(self)
         for x,y,color in action[0]:
-            next_chessboard.state[color].add((x,y))
-            next_chessboard.used_posi.add((x,y))
+            next.state[color].add((x,y))
+            next.used_posi.add((x,y))
         
         for x,y,color in action[1]:
-            next_chessboard.state[color].remove((x,y))
-            next_chessboard.used_posi.remove((x,y))
+            next.state[color].remove((x,y))
+            next.used_posi.remove((x,y))
         
-        next_chessboard.round += 1
+        next.round += 1
+        color = next.round % 2
         
-        if next_chessboard.round >= 18:
-            if len(action[0])+len(action[1]) == 0:
-                self.lose = True
-            elif len(self.state[color]) <= 3:
-                self.lose = True
-            elif len(self.state[1-color]) <= 3:
-                self.win  = True
-        
-        return next_chessboard
+        if next.round >= 18:
+            if len(action[1]) >= 2:
+                next.chase_time = 0
+            else:
+                next.chase_time += 1
+            
+            if next.chase_time >= 20:
+                next.win =  len(next.state[color]) > len(next.state[1-color])
+                next.lose = not next.win
+            elif len(action[0])+len(action[1]) == 0:
+                next.lose = True
+            elif len(next.state[color]) <= 3:
+                next.lose = True
+            elif len(next.state[1-color]) <= 3:
+                next.win  = True
+                
+        return next
 
     def isLose(self):
         return self.lose
@@ -101,7 +112,7 @@ class chessboard():
         x, y, color = posi
         
         i = 3-abs(3-x)
-        if i != 0:
+        if x != 3:
             if (x,i) in self.state[color] and (x,3) in self.state[color] and (x,6-i) in self.state[color]:
                 return True
         elif y < 3:
@@ -112,7 +123,7 @@ class chessboard():
                 return True
             
         j = 3-abs(3-y)
-        if j != 0:
+        if y != 3:
             if (j,y) in self.state[color] and (3,y) in self.state[color] and (6-j,y) in self.state[color]:
                 return True
         elif x < 3:
@@ -128,7 +139,7 @@ class chessboard():
         points = []
         
         i = 3-abs(3-x)
-        if i != 0:
+        if x != 3:
             if y == 3:
                 if (x,i) not in self.used_posi: 
                     points.append((x,i))
@@ -151,14 +162,14 @@ class chessboard():
                     points.append((x,5))
                 
         j = 3-abs(3-y)
-        if j != 0:
+        if y != 3:
             if x == 3:
-                if (j,y) not in self.used_posi: 
+                if (j,y) not in self.used_posi:
                     points.append((j,y))
                 if (6-j,y) not in self.used_posi:
                     points.append((6-j,y))
             else:
-                 if (3,y) not in self.used_posi: 
+                 if (3,y) not in self.used_posi:
                     points.append((3,y))
         else:
             if abs(3-x) == 2:
@@ -173,7 +184,7 @@ class chessboard():
                 if (5,y) not in self.used_posi:
                     points.append((5,y))    
                     
-        return point
+        return points
     
     def append(self, x, y, color):
         # ONLY FOR TEST, DON'T USE
@@ -181,6 +192,7 @@ class chessboard():
     
     
     def display(self):
+        
         fig, ax = plt.subplots()
         fig.patch.set_facecolor('saddlebrown')
         ax.set_facecolor('saddlebrown')
@@ -212,9 +224,11 @@ class chessboard():
 
         # display
         plt.gca().set_aspect('equal', adjustable='box')
-        plt.show(block=False)
-        plt.pause(1)
-        plt.close()
+        import os
+        save_dir = 'picture'
+        file_path = os.path.join(save_dir, f'frame_{self.round:03d}.png')
+        plt.savefig(file_path)
+        plt.close(fig)
 
 '''
 
@@ -231,9 +245,14 @@ black has high priority
 if __name__ == "__main__":
     board = chessboard()
     while True:
-        if board.isLose() or board.isWin() or board.round>=18:
+        if board.isLose() or board.isWin() or board.round>=100:
             break
         else:
             actions = list(board.get_Action())
             board = board.get_NextState(actions[0])
-            board.display()
+            # board.display()
+    
+    if (board.round %2 == 0 and board.win) or (board.round %2 == 1 and board.lose):
+        print("black win")
+    else:
+        print("white win")
