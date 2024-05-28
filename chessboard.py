@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import copy
+import math
 
 class chessboard():
     all_posi = {
@@ -7,16 +8,17 @@ class chessboard():
         (3, 0), (3, 1), (3, 2), (3, 4), (3, 5), (3, 6),
         (6, 0), (6, 3), (6, 6), (5, 1), (5, 3), (5, 5), (4, 2), (4, 3), (4, 4)
     }
+    
     def __init__(self):
         self.state = [set(),set()] # [ black, white ]
-        self.round = 0
+        self.round = int(0)
         self.lose = False
         self.win  = False
-        self.used_posi = []
+        self.used_posi = set()
     
     def get_Action(self):
         '''
-        input : round
+        input : 
         output: actions
         '''
         
@@ -26,25 +28,47 @@ class chessboard():
         unused_posi = self.all_posi - self.used_posi
                 
         # put/move chess and maybe remove other chess
-        actions = [] # action = [ add, remove ], add={(x,y,color),...}
-        if round < 18: # place stage
-            action = [[],[]]
-            
-            
-            
-            actions.append(action)
-        else:          # normal stage
-            action = [[],[]]
-            
-            actions.append(action)
-            
+        actions = set() # action = [ add, remove ], add={(x,y,color),...}
+        
+        if self.round < 18:
+            # place stage
+            for add in unused_posi:
+                ADD = (add[0], add[1], color)
+                
+                # enter eat stage or not
+                if self.get_NextState([{ADD}, set()]).in_line(ADD):
+                    for remove in self.state[1-color]:
+                        REMOVE = (remove[0], remove[1], 1-color)
+                        if not self.in_line(REMOVE):
+                            actions.add( (frozenset({ADD}), frozenset({REMOVE})) )
+                        else:
+                            actions.add( (frozenset({ADD}), frozenset()) )
+                else:
+                    actions.add( (frozenset({ADD}), frozenset()) )
+                    
+        else:
+            # normal stage
+            for movefrom in self.state[color]:
+                moveto_set = self.__where_to_move(movefrom)
+                for moveto in moveto_set:
+                    MOVETO = (moveto[0], moveto[1], color)
+                    MOVEFROM = (movefrom[0], movefrom[1], color)
+                    
+                    # enter eat stage or not
+                    if self.get_NextState( ({MOVETO}, {MOVEFROM}) ).in_line(MOVETO):
+                        for remove in self.state[1-color]:
+                            REMOVE = (remove[0], remove[1], 1-color)
+                            if not self.in_line(REMOVE):
+                                actions.add( (frozenset({MOVETO}), frozenset({MOVEFROM, REMOVE})) )
+                            else:
+                                actions.add( (frozenset({MOVETO}), frozenset({MOVEFROM})) )
+                    else:
+                        actions.add( (frozenset({MOVETO}), frozenset({MOVEFROM})) )
         return actions
     
     def get_NextState(self, action): 
         # input : action
         # output: next_chessboard
-        
-        color = self.round % 2
         
         next_chessboard = copy.deepcopy(self)
         for x,y,color in action[0]:
@@ -73,8 +97,83 @@ class chessboard():
     def isWin(self):
         return self.win
     
-    def is_line(self, movefrom, moveto):
+    def in_line(self, posi):
+        x, y, color = posi
+        
+        i = 3-abs(3-x)
+        if i != 0:
+            if (x,i) in self.state[color] and (x,3) in self.state[color] and (x,6-i) in self.state[color]:
+                return True
+        elif y < 3:
+            if (x,0) in self.state[color] and (x,1) in self.state[color] and (x,2) in self.state[color]:
+                return True
+        else:
+            if (x,4) in self.state[color] and (x,5) in self.state[color] and (x,6) in self.state[color]:
+                return True
+            
+        j = 3-abs(3-y)
+        if j != 0:
+            if (j,y) in self.state[color] and (3,y) in self.state[color] and (6-j,y) in self.state[color]:
+                return True
+        elif x < 3:
+            if (0,y) in self.state[color] and (1,y) in self.state[color] and (2,y) in self.state[color]:
+                return True
+        else:
+            if (4,y) in self.state[color] and (5,y) in self.state[color] and (6,y) in self.state[color]:
+                return True
         return False
+    
+    def __where_to_move(self, point):
+        x, y = point
+        points = []
+        
+        i = 3-abs(3-x)
+        if i != 0:
+            if y == 3:
+                if (x,i) not in self.used_posi: 
+                    points.append((x,i))
+                if (x,6-i) not in self.used_posi:
+                    points.append((x,6-i))
+            else:
+                 if (x,3) not in self.used_posi: 
+                    points.append((x,3))
+        else:
+            if abs(3-y) == 2:
+                if (x,y-1) not in self.used_posi: 
+                    points.append((x,y-1))
+                if (x,y+1) not in self.used_posi:
+                    points.append((x,y+1))
+            elif y < 3:
+                if (x,1) not in self.used_posi:
+                    points.append((x,1))
+            else:
+                if (x,5) not in self.used_posi:
+                    points.append((x,5))
+                
+        j = 3-abs(3-y)
+        if j != 0:
+            if x == 3:
+                if (j,y) not in self.used_posi: 
+                    points.append((j,y))
+                if (6-j,y) not in self.used_posi:
+                    points.append((6-j,y))
+            else:
+                 if (3,y) not in self.used_posi: 
+                    points.append((3,y))
+        else:
+            if abs(3-x) == 2:
+                if (x-1,y) not in self.used_posi: 
+                    points.append((x-1,y))
+                if (x+1,y) not in self.used_posi:
+                    points.append((x+1,y))
+            elif x < 3:
+                if (1,y) not in self.used_posi:
+                    points.append((1,y))
+            else:
+                if (5,y) not in self.used_posi:
+                    points.append((5,y))    
+                    
+        return point
     
     def append(self, x, y, color):
         # ONLY FOR TEST, DON'T USE
@@ -82,7 +181,40 @@ class chessboard():
     
     
     def display(self):
-        return 
+        fig, ax = plt.subplots()
+        fig.patch.set_facecolor('saddlebrown')
+        ax.set_facecolor('saddlebrown')
+        
+        # draw board
+        for i in range(3):
+            ax.plot([i,i], [i,6-i], color='white', zorder=1)
+            ax.plot([i,6-i], [6-i,6-i], color='white', zorder=1)
+            ax.plot([6-i,6-i], [6-i,i], color='white', zorder=1)
+            ax.plot([6-i,i], [i,i], color='white', zorder=1)
+        ax.plot([3, 3], [0, 2], color='white', zorder=1)
+        ax.plot([3, 3], [4, 6], color='white', zorder=1)
+        ax.plot([0, 2], [3, 3], color='white', zorder=1)
+        ax.plot([4, 6], [3, 3], color='white', zorder=1)
+        ax.set_xlim(-1, 7)
+        ax.set_ylim(-1, 7)
+        ax.set_xticks(range(7))
+        ax.set_yticks(range(7))
+        ax.axis('off')
+
+        # mark chess
+        for i in range(2):
+            color = 'black' if i==0 else 'white'
+            for y,x in self.state[i]:  
+                marker = 'o'
+                size = 600
+                ax.scatter(x, 6-y, color=color, marker=marker, s=size, zorder=2)
+                    
+
+        # display
+        plt.gca().set_aspect('equal', adjustable='box')
+        plt.show(block=False)
+        plt.pause(1)
+        plt.close()
 
 '''
 
@@ -98,4 +230,10 @@ black has high priority
 
 if __name__ == "__main__":
     board = chessboard()
-    board.display()
+    while True:
+        if board.isLose() or board.isWin() or board.round>=18:
+            break
+        else:
+            actions = list(board.get_Action())
+            board = board.get_NextState(actions[0])
+            board.display()
