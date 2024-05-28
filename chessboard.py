@@ -9,15 +9,18 @@ class chessboard():
     }
     def __init__(self):
         self.state = [set(),set()] # [ black, white ]
+        self.round = 0
         self.lose = False
         self.win  = False
         self.used_posi = []
     
-    def get_Action(self, color, round):
+    def get_Action(self):
         '''
         input : color(0/1), round
         output: actions
         '''
+        
+        color = self.round % 2
         
         # unused position
         unused_posi = self.all_posi - self.used_posi
@@ -34,16 +37,18 @@ class chessboard():
                     else:
                         actions.append([{(moveto[0],moveto[1],color)},
                                         {(movefrom[0],movefrom[1],color)}])
-        elif round <= 18: # place stage
+        elif round < 18: # place stage
             action = [[],[]]
         else:             # normal stage
             action = [[],[]]
             
         return actions
     
-    def get_NextState(self, color, action, round): 
+    def get_NextState(self, action): 
         # input : color, action, round
         # output: next_chessboard
+        
+        color = self.round % 2
         
         next_chessboard = copy.deepcopy(self)
         for x,y,color in action[0]:
