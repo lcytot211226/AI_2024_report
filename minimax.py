@@ -17,7 +17,7 @@ class minimax():
         '''
         # 
         
-        next_state = state
+        next_state = state.get_NextState(list(state.get_Action())[0])
         return next_state
     
     def get_value(self, state, parameter):
