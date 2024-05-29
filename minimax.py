@@ -9,9 +9,9 @@ class minimax():
     state.isWin()
     '''
     
-    def Next_state(self, state): 
+    def Next_state(self, state, parameter): 
         '''
-        input : state
+        input : state, parameter
         output: next_state
         (state: chessboard)
         '''
