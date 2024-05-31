@@ -3,11 +3,11 @@ import copy
 import math
 
 class chessboard():
-    all_posi = {
+    all_posi = [
         (0, 0), (0, 3), (0, 6), (1, 1), (1, 3), (1, 5), (2, 2), (2, 3), (2, 4),
         (3, 0), (3, 1), (3, 2), (3, 4), (3, 5), (3, 6),
         (6, 0), (6, 3), (6, 6), (5, 1), (5, 3), (5, 5), (4, 2), (4, 3), (4, 4)
-    }
+    ]
     
     def __init__(self):
         self.state = [set(),set()] # [ black, white ]
@@ -16,6 +16,7 @@ class chessboard():
         self.lose = False
         self.win  = False
         self.used_posi = set()
+        self.unused_posi = set(self.all_posi)
     
     def get_Action(self):
         '''
@@ -26,21 +27,20 @@ class chessboard():
         color = self.round % 2
         
         # unused position
-        unused_posi = self.all_posi - self.used_posi
                 
         # put/move chess and maybe remove other chess
         actions = set() # action = ( add, remove ), add={(x,y,color),...}
         
         if self.round < 18:
             # place stage
-            for add in unused_posi:
+            for add in self.unused_posi:
                 ADD = (add[0], add[1], color)
                 
                 # enter eat stage or not
                 if self.get_NextState(({ADD}, set())).in_line(ADD):
                     for remove in self.state[1-color]:
                         REMOVE = (remove[0], remove[1], 1-color)
-                        if not self.in_line(REMOVE):
+                        if not self.get_NextState(({ADD}, set())).in_line(REMOVE):
                             actions.add( (frozenset({ADD}), frozenset({REMOVE})) )
                         else:
                             actions.add( (frozenset({ADD}), frozenset()) )
@@ -60,7 +60,7 @@ class chessboard():
                     if self.get_NextState( ({MOVETO}, {MOVEFROM}) ).in_line(MOVETO):
                         for remove in self.state[1-color]:
                             REMOVE = (remove[0], remove[1], 1-color)
-                            if not self.in_line(REMOVE):
+                            if not self.get_NextState( ({MOVETO}, {MOVEFROM}) ).in_line(REMOVE):
                                 actions.add( (frozenset({MOVETO}), frozenset({MOVEFROM, REMOVE})) )
                             else:
                                 actions.add( (frozenset({MOVETO}), frozenset({MOVEFROM})) )
@@ -76,10 +76,12 @@ class chessboard():
         for x,y,color in action[0]:
             next.state[color].add((x,y))
             next.used_posi.add((x,y))
+            next.unused_posi.remove((x,y))
         
         for x,y,color in action[1]:
             next.state[color].remove((x,y))
             next.used_posi.remove((x,y))
+            next.unused_posi.add((x,y))
         
         next.round += 1
         color = next.round % 2
@@ -228,6 +230,7 @@ class chessboard():
         save_dir = 'picture'
         file_path = os.path.join(save_dir, f'frame_{self.round:03d}.png')
         plt.savefig(file_path)
+        # plt.show()
         plt.close(fig)
 
 '''
