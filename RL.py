@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-import gym
 import random
 from collections import deque
 import os
@@ -47,7 +46,7 @@ class Net(nn.Module):
         return q_values
 
 def board_state_to_ndarray(board, color):
-    arr = np.ndarray(shape=(25,))
+    arr = np.zeros(shape=(25,))
     my_chesses = board.state[color]
     oppo_chesses = board.state[1 - color]
     for i in range(25):
@@ -89,14 +88,14 @@ def index_to_action(board, index, color):
 
 def eval_reward(state, action, board, color):
     if board.isWin():
-        return 100
+        return 500
     if board.isLose():
-        return -100
+        return -500
     
-    reward = len(state[color]) - 4 #make module wants to keep chess alive
+    reward = len(state[color]) - 3 #make module wants to keep chess alive
     for removed in action[1]:
         if removed[2] == 1-color:
-            return reward + 10
+            return reward + 50
     return reward
 
 class Agent():
@@ -149,17 +148,35 @@ class Agent():
     def choose_action(self, state):
         with torch.no_grad():
             if random.random() < self.epsilon:
-                return action_to_index(board=self.board, action=random.choice(self.board.get_Action()), color=self.color)
+                # Randomly choose a valid action
+                action = random.choice(self.board.get_Action())
+                return action_to_index(board=self.board, action=action, color=self.color)
             
-            state = torch.as_tensor(state, dtype=torch.float32)
-            return torch.argmax(self.evaluate_net.forward(state)).item()
+            # Predict Q-values for all actions
+            state_tensor = torch.as_tensor(state, dtype=torch.float32).unsqueeze(0)
+            q_values = self.evaluate_net.forward(state_tensor).squeeze(0)
+
+            # Get valid actions
+            valid_actions = self.board.get_Action()
+            valid_indices = [action_to_index(board=self.board, action=a, color=self.color) for a in valid_actions]
+
+            # Create a mask of valid actions
+            mask = torch.full((self.n_actions,), float('-inf'), dtype=torch.float32)
+            mask[valid_indices] = 0
+
+            # Apply the mask to the Q-values
+            masked_q_values = q_values + mask
+
+            # Return the index of the best valid action
+            return torch.argmax(masked_q_values).item()
 
 def train(color):
     board = chessboard()
     agent = Agent(board=board, color=color)
-    oppo = minmax()
+    oppo = Agent(board=board, color=1-color)
     episode = 100
     for _ in tqdm(range(episode)): #modified
+        board.reset()
         state = board_state_to_ndarray(board.state)
         while True:
             next_state = None
