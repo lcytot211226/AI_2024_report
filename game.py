@@ -21,7 +21,7 @@ class MMT_to_MMT():
             mmx = minimax()
             # play 200 rounds
             WIN = 0
-            ROUND = 100
+            ROUND = 1
             for round in range(ROUND):
                 board = chessboard()
                 for i in range(10000):
@@ -31,6 +31,8 @@ class MMT_to_MMT():
                         board = mmx.Next_state(board, para0)
                     else:
                         board = mmx.Next_state(board, para1)
+                    board.display()
+                
                 if (board.isWin() and (i+round)%2 == 0) or (board.isLose() and (i+round)%2 == 1):
                     WIN += 1
             win_rate.append(WIN/ROUND)
@@ -47,13 +49,13 @@ if __name__ == "__main__":
     para0 = [1,2,3,3,2,1]
     para1 = [3,2,1,1,2,3]
     mmt_mmt = MMT_to_MMT()
+    
     for _ in range(1):
         new_para = mmt_mmt.train_MMT_MMT(para0, para1)
         para1 = para0
         para0 = new_para
         
         # new->0, 0->1, 1->2
-    
     # train RL machine
     # MMT_PARA = para0
     # for _ in range(10):

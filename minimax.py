@@ -16,8 +16,9 @@ class minimax():
         (state: chessboard)
         '''
         # 
-        
-        next_state = state.get_NextState(list(state.get_Action())[0])
+        import random
+        actions = list(state.get_Action())
+        next_state = state.get_NextState(actions[random.randint(0,len(actions)-1)])
         return next_state
     
     def get_value(self, state, parameter):
