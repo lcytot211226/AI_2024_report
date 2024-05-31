@@ -227,8 +227,9 @@ class chessboard():
         # display
         plt.gca().set_aspect('equal', adjustable='box')
         import os
-        save_dir = './picture'
-        os.makedirs(save_dir, exist_ok=True)
+        save_dir = 'picture'
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
         file_path = os.path.join(save_dir, f'frame_{self.round:03d}.png')
         plt.savefig(file_path)
         # plt.show()
