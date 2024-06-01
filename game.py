@@ -1,6 +1,8 @@
 from chessboard import chessboard
 from minimax import minimax
 from optimize_MMT import optimize_MMT
+import argparse
+from tqdm import tqdm
 
 class MMT_to_MMT():
     def displacement(self, para):
@@ -21,17 +23,17 @@ class MMT_to_MMT():
             mmx = minimax()
             # play 200 rounds
             WIN = 0
-            ROUND = 100
+            ROUND = 1
             for round in range(ROUND):
                 board = chessboard()
                 for i in range(10000):
                     if board.isWin() or board.isLose():
                         break
                     elif (i+round)%2 == 0:
-                        board = mmx.Next_state(board, para0)
+                        board, action = mmx.Next_state(board, para0)
                     else:
-                        board = mmx.Next_state(board, para1)
-                    board.display()
+                        board, action = mmx.Next_state(board, para1)
+                    board.display(action, board.state)
                 if (board.isWin() and (i+round)%2 == 0) or (board.isLose() and (i+round)%2 == 1):
                     WIN += 1
             win_rate.append(WIN/ROUND)
@@ -42,9 +44,8 @@ class RL_to_MMT():
         
         return 
 
-if __name__ == "__main__":
-    
-    # train origin minimax machine
+def train1():
+    print("Training 1 is running")
     para0 = [1,2,3,3,2,1]
     para1 = [3,2,1,1,2,3]
     mmt_mmt = MMT_to_MMT()
@@ -53,7 +54,28 @@ if __name__ == "__main__":
         para1 = para0
         para0 = new_para
         
-        # new->0, 0->1, 1->2
+def train2():
+    print("Training 2 is running")
+    
+def play():
+    print("loading...")
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Run functions.")
+    parser.add_argument('--train1', action='store_true', help='Run training 1')
+    parser.add_argument('--train2', action='store_true', help='Run training 2')
+    parser.add_argument('--play', action='store_true', help='Run training 2')
+    
+    args = parser.parse_args()
+
+    if args.train1:
+        train1()
+    if args.train2:
+        train2()
+    if args.play:
+        play()
+        
+        
     
     # train RL machine
     # MMT_PARA = para0

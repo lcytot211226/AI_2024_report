@@ -38,12 +38,17 @@ class chessboard():
                 
                 # enter eat stage or not
                 if self.get_NextState(({ADD}, set())).in_line(ADD):
+                    REMOVE_list = []
                     for remove in self.state[1-color]:
                         REMOVE = (remove[0], remove[1], 1-color)
                         if not self.get_NextState(({ADD}, set())).in_line(REMOVE):
+                            REMOVE_list.append(REMOVE)
+                            
+                    if len(REMOVE_list) == 0:
+                        actions.add( (frozenset({ADD}), frozenset()) )
+                    else:
+                        for REMOVE in REMOVE_list:
                             actions.add( (frozenset({ADD}), frozenset({REMOVE})) )
-                        else:
-                            actions.add( (frozenset({ADD}), frozenset()) )
                 else:
                     actions.add( (frozenset({ADD}), frozenset()) )
                     
@@ -58,12 +63,16 @@ class chessboard():
                     
                     # enter eat stage or not
                     if self.get_NextState( ({MOVETO}, {MOVEFROM}) ).in_line(MOVETO):
+                        REMOVE_list = []
                         for remove in self.state[1-color]:
                             REMOVE = (remove[0], remove[1], 1-color)
                             if not self.get_NextState( ({MOVETO}, {MOVEFROM}) ).in_line(REMOVE):
-                                actions.add( (frozenset({MOVETO}), frozenset({MOVEFROM, REMOVE})) )
-                            else:
-                                actions.add( (frozenset({MOVETO}), frozenset({MOVEFROM})) )
+                                REMOVE_list.append(REMOVE)
+                                
+                        if len(REMOVE_list) == 0:
+                            actions.add( (frozenset({MOVETO}), frozenset({MOVEFROM})) )
+                        else:
+                            actions.add( (frozenset({MOVETO}), frozenset({MOVEFROM, REMOVE})) )
                     else:
                         actions.add( (frozenset({MOVETO}), frozenset({MOVEFROM})) )
         if len(actions) == 0:
@@ -195,7 +204,7 @@ class chessboard():
         return
     
     
-    def display(self):
+    def display(self, action, state):
         
         fig, ax = plt.subplots()
         fig.patch.set_facecolor('saddlebrown')
@@ -216,6 +225,9 @@ class chessboard():
         ax.set_xticks(range(7))
         ax.set_yticks(range(7))
         ax.axis('off')
+        
+        plt.title(action)
+
 
         # mark chess
         for i in range(2):
