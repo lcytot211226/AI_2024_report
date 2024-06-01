@@ -31,6 +31,7 @@ class MMT_to_MMT():
                         board = mmx.Next_state(board, para0)
                     else:
                         board = mmx.Next_state(board, para1)
+                    board.display()
                 if (board.isWin() and (i+round)%2 == 0) or (board.isLose() and (i+round)%2 == 1):
                     WIN += 1
             win_rate.append(WIN/ROUND)

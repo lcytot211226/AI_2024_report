@@ -66,6 +66,8 @@ class chessboard():
                                 actions.add( (frozenset({MOVETO}), frozenset({MOVEFROM})) )
                     else:
                         actions.add( (frozenset({MOVETO}), frozenset({MOVEFROM})) )
+        if len(actions) == 0:
+            self.lose = True
         return actions
     
     def get_NextState(self, action): 
@@ -255,7 +257,7 @@ if __name__ == "__main__":
         else:
             actions = list(board.get_Action())
             board = board.get_NextState(actions[0])
-            # board.display()
+            board.display()
     
     if (board.round %2 == 0 and board.win) or (board.round %2 == 1 and board.lose):
         print("black win")
