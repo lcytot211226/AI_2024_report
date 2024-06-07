@@ -187,14 +187,14 @@ class Agent():
             # Return the index of the best valid action
             return torch.argmax(masked_q_values).item()
 
-def train(color):
+def train_RL(color, episode, para):
     agent = Agent()
     oppo = minimax()
-    episode = 100
     for _ in tqdm(range(episode)): #modified
         board = chessboard()
         while True:
             next_board = None
+            # board.display()
             if board.round % 2 == color:
                 agent.count += 1
 
@@ -207,10 +207,11 @@ def train(color):
                 if agent.count >= 1000:
                     agent.learn()
             else:
-                next_board = oppo.Next_state(state=board, parameter=None)
+                next_board = oppo.Next_state(state=board, parameter=para)
+                done = board.isWin() or board.isLose()
             if done:
                 break
             board = next_board
             
 if __name__ == "__main__":
-    train(color=0)
+    train_RL(color=0, episode=100, para=[1,1,1,1,1,1])

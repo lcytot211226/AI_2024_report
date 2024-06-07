@@ -13,7 +13,7 @@ class minimax():
     state.isWin()
     '''
 
-    def Next_state(self, state, parameter, alpha=-float('inf'), beta=float('inf'), depth=3):
+    def Next_state(self, state, parameter, alpha=-float('inf'), beta=float('inf'), depth=2):
         '''
         input : state, parameter
         output: next_state
@@ -38,7 +38,7 @@ class minimax():
             return state
 
         best_action = random.choice(best_actions)
-        return state.get_NextState(best_action), best_action
+        return state.get_NextState(best_action)
 
     def __minimax(self, state, parameter, alpha, beta, depth, current_player_color):
         if state.isWin() or state.isLose() or depth == 0:

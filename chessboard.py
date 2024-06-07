@@ -204,7 +204,7 @@ class chessboard():
         return
     
     
-    def display(self, action, state):
+    def display(self):
         
         fig, ax = plt.subplots()
         fig.patch.set_facecolor('saddlebrown')
@@ -225,8 +225,6 @@ class chessboard():
         ax.set_xticks(range(7))
         ax.set_yticks(range(7))
         ax.axis('off')
-        
-        plt.title(action)
 
 
         # mark chess
