@@ -2,12 +2,28 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-import gym
 import random
 from collections import deque
 import os
 from tqdm import tqdm
 from chessboard import chessboard
+from minimax import minimax
+
+class RL():
+    def __init__(self):
+        self.agent = Agent(epsilon=0)
+        self.agent.target_net.load_state_dict(torch.load(DICT_PATH))
+
+    def Next_state(self, state, parameter=None): 
+        '''
+        input : state, parameter
+        output: next_state
+        (state: chessboard)
+        '''
+        action_idx = self.agent.choose_action(state)
+        action = index_to_action(board=state, index=action_idx)
+        next_state = state.get_NextState(action)
+        return next_state
 
 class replay_buffer():
     def __init__(self, capacity):
@@ -46,11 +62,12 @@ class Net(nn.Module):
         q_values = self.fc3(x)
         return q_values
 
-def board_state_to_ndarray(board, color):
-    arr = np.ndarray(shape=(25,))
+def board_state_to_ndarray(board):
+    color = board.round % 2
+    arr = np.zeros(shape=(24,))
     my_chesses = board.state[color]
     oppo_chesses = board.state[1 - color]
-    for i in range(25):
+    for i in range(24):
         if board.all_posi[i] in my_chesses:
             arr[i] = 1
         elif board.all_posi[i] in oppo_chesses:
@@ -59,52 +76,51 @@ def board_state_to_ndarray(board, color):
             arr[i] = 0
     return arr
 
-def action_chess_to_posi(chess):
-    return (chess[0], chess[2], )
-
-def action_to_index(board, action, color):
-    add_posi = board.all_posi.index(action_chess_to_posi(action[0])) + 1
+def action_to_index(board, action):
+    add_posi = 0
     move_from_posi = 0
     eat_posi = 0
-    for removed in action[1]:
-        if removed[2] == color:
-            move_from_posi = board.all_posi.index(action_chess_to_posi(removed)) + 1
+    for x,y,color in action[0]:
+        add_posi = board.all_posi.index((x, y, )) + 1
+    for x,y,color in action[1]:
+        if color == board.round % 2:
+            move_from_posi = board.all_posi.index((x, y, )) + 1
         else:
-            eat_posi = board.all_posi.index(action_chess_to_posi(removed))
+            eat_posi = board.all_posi.index((x, y, )) + 1
     return add_posi * (25 ** 2) + move_from_posi * 25 + eat_posi
 
-def index_to_action(board, index, color):
+def index_to_action(board, index):
+    color = board.round % 2
     arr = [0] * 3
     for i in range(3):
         arr[2-i] = index % 25
         index = index // 25
     
     add = { board.all_posi[arr[0] - 1] + (color, ) }
-    remove = {}
+    remove = set()
     if arr[1] > 0:
         remove.add(board.all_posi[arr[1] - 1] + (color, ))
     if arr[2] > 0:
         remove.add(board.all_posi[arr[2] - 1] + (1-color, ))
     return (add, remove, )
 
-def eval_reward(state, action, board, color):
+def eval_reward(action, board):
+    color = board.round % 2
     if board.isWin():
-        return 100
+        return 500
     if board.isLose():
-        return -100
+        return -500
     
-    reward = len(state[color]) - 4 #make module wants to keep chess alive
+    reward = len(board.state[color]) - 3 #make module wants to keep chess alive
     for removed in action[1]:
         if removed[2] == 1-color:
-            return reward + 10
+            return reward + 50
     return reward
 
-class Agent():
-    DICT_PATH = "./RL.pt"
+DICT_PATH = "./RL.pt"
 
-    def __init__(self, board, color, epsilon=0.05, learning_rate=0.0002, GAMMA=0.97, batch_size=32, capacity=10000):
-        self.board = board
-        self.color = color
+class Agent():
+    def __init__(self, epsilon=0.05, learning_rate=0.0002, GAMMA=0.97, batch_size=32, capacity=10000):
         self.d_states = 24  # the number of states
         self.n_actions = 25**3  # the number of actions
         self.count = 0  # recording the number of iterations
@@ -144,41 +160,57 @@ class Agent():
         loss.backward()
         self.optimizer.step()
 
-        torch.save(self.target_net.state_dict(), self.DICT_PATH)
+        torch.save(self.target_net.state_dict(), DICT_PATH)
 
-    def choose_action(self, state):
+    def choose_action(self, board):
         with torch.no_grad():
             if random.random() < self.epsilon:
-                return action_to_index(board=self.board, action=random.choice(self.board.get_Action()), color=self.color)
+                # Randomly choose a valid action
+                action = random.choice(list(board.get_Action()))
+                return action_to_index(board=board, action=action)
             
-            state = torch.as_tensor(state, dtype=torch.float32)
-            return torch.argmax(self.evaluate_net.forward(state)).item()
+            # Predict Q-values for all actions
+            state_tensor = torch.as_tensor(board_state_to_ndarray(board=board), dtype=torch.float32).unsqueeze(0)
+            q_values = self.evaluate_net.forward(state_tensor).squeeze(0)
+
+            # Get valid actions
+            valid_actions = board.get_Action()
+            valid_indices = [action_to_index(board=board, action=a) for a in valid_actions]
+
+            # Create a mask of valid actions
+            mask = torch.full((self.n_actions,), float('-inf'), dtype=torch.float32)
+            mask[valid_indices] = 0
+
+            # Apply the mask to the Q-values
+            masked_q_values = q_values + mask
+
+            # Return the index of the best valid action
+            return torch.argmax(masked_q_values).item()
 
 def train(color):
-    board = chessboard()
-    agent = Agent(board=board, color=color)
-    oppo = minmax()
+    agent = Agent()
+    oppo = minimax()
     episode = 100
     for _ in tqdm(range(episode)): #modified
-        state = board_state_to_ndarray(board.state)
+        board = chessboard()
         while True:
-            next_state = None
+            next_board = None
             if board.round % 2 == color:
                 agent.count += 1
 
-                action_idx = agent.choose_action(state)
-                action = index_to_action(board=board, index=action_idx, color=color)
-                next_state = board.get_NextState(action)
+                action_idx = agent.choose_action(board)
+                action = index_to_action(board=board, index=action_idx)
+                next_board = board.get_NextState(action)
                 done = board.isWin() or board.isLose()
-                reward = eval_reward(board=board, action=action, state=next_state, color=color)
-                next_state = board_state_to_ndarray(next_state)
-                agent.buffer.insert(state, action_idx, reward, next_state=next_state, done=int(done))
+                reward = eval_reward(board=board, action=action)
+                agent.buffer.insert(board_state_to_ndarray(board), action_idx, reward, next_state=board_state_to_ndarray(next_board), done=int(done))
                 if agent.count >= 1000:
                     agent.learn()
             else:
-                action = oppo.get_Action(state)
-                next_state = board.get_NextState(action)
-                next_state = board_state_to_ndarray(next_state)
+                next_board = oppo.Next_state(state=board, parameter=None)
             if done:
                 break
-            state = next_state
+            board = next_board
+            
+if __name__ == "__main__":
+    train(color=0)
