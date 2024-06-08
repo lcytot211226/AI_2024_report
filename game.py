@@ -8,12 +8,12 @@ import random
 
 class MMT_to_MMT():
     def displacement(self, para):
-        # h = 2
+        h = 1
         S = []
         for _ in range(16):
             rand_para = []
             for p in para:
-                rand_para.append(p+random.uniform(-2, 2)) 
+                rand_para.append(p+random.uniform(-h, h)) 
             S.append(rand_para)
         
         return S
@@ -24,7 +24,8 @@ class MMT_to_MMT():
         
         win_rate = []
         para1 = Parameter1
-        for para0 in Para0:          
+        for idx in tqdm(range(len(Para0))): 
+            para0 = Para0[idx]
             '''
             battle para0 with para1,
             and get win rate of para0
@@ -53,7 +54,8 @@ def train1():
     para0 = [1,2,3,3,2,1]
     para1 = [3,2,1,1,2,3]
     mmt_mmt = MMT_to_MMT()
-    for _ in tqdm(range(1)):
+    for i in range(1):
+        print(f"{i+1}times train")
         new_para = mmt_mmt.train_MMT_MMT(para0, para1)
         para1 = para0
         para0 = new_para
@@ -67,6 +69,7 @@ def train2(para):
     
 def play():
     print("loading...")
+    
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run functions.")
@@ -78,7 +81,7 @@ if __name__ == "__main__":
     if args.train:
         para = train1()
         print(para)
-        train2(para)
+        # train2(para)
     if args.play:
         play()
         
