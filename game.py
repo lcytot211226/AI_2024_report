@@ -5,6 +5,7 @@ import argparse
 from RL import *
 from tqdm import tqdm
 import random
+import csv
 
 class MMT_to_MMT():
     def displacement(self, para):
@@ -53,12 +54,20 @@ def train1():
     print("Training 1 is running")
     para0 = [1,2,3,3,2,1]
     para1 = [3,2,1,1,2,3]
+    data_para = [para0, para1]
+    
     mmt_mmt = MMT_to_MMT()
     for i in range(1):
         print(f"{i+1}times train")
         new_para = mmt_mmt.train_MMT_MMT(para0, para1)
         para1 = para0
         para0 = new_para
+        data_para.append(new_para)
+    
+    with open('para.csv', 'w', newline='', encoding='utf-8') as file:
+        writer = csv.writer(file)
+        writer.writerows(data_para)  
+    
     return new_para
     
         
