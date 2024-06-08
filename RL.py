@@ -8,6 +8,7 @@ import os
 from tqdm import tqdm
 from chessboard import chessboard
 from minimax import minimax
+import csv
 
 class RL():
     def __init__(self):
@@ -190,6 +191,7 @@ class Agent():
 def train_RL(color, episode, para):
     agent = Agent()
     oppo = minimax()
+    win_lose = []
     for _ in tqdm(range(episode)): #modified
         board = chessboard()
         while True:
@@ -212,6 +214,14 @@ def train_RL(color, episode, para):
             if done:
                 break
             board = next_board
+        if ( board.round == color and board.isWin() ) or ( board.round == 1-color and board.isLose() ):
+            win_lose.append(1)
+        else:
+            win_lose.append(0)
+    
+    with open('RL_win.csv', 'w', newline='', encoding='utf-8') as file:
+        writer = csv.writer(file)
+        writer.writerows(win_lose)  
             
 if __name__ == "__main__":
     train_RL(color=0, episode=100, para=[1,1,1,1,1,1])
