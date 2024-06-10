@@ -65,7 +65,7 @@ class Net(nn.Module):
 
 def board_state_to_ndarray(board):
     color = board.round % 2
-    arr = np.zeros(shape=(24,))
+    arr = np.empty(shape=(24,))
     my_chesses = board.state[color]
     oppo_chesses = board.state[1 - color]
     for i in range(24):
@@ -110,7 +110,7 @@ def eval_reward(action, board):
     if board.isWin():
         return 500
     if board.isLose():
-        return -500
+        return -1000
     
     reward = len(board.state[color]) - 3 #make module wants to keep chess alive
     for removed in action[1]:
@@ -140,7 +140,7 @@ class Agent():
             self.evaluate_net.parameters(), lr=self.learning_rate)  # Adam is a method using to optimize the neural network
 
     def learn(self):
-        if self.count % 100 == 0:
+        if self.count % 20 == 0:
             self.target_net.load_state_dict(self.evaluate_net.state_dict())
 
         state, action, reward, tar_state, done = self.buffer.sample(self.batch_size)
@@ -194,27 +194,26 @@ def train_RL(color, episode, para):
     win_lose = []
     for _ in tqdm(range(episode)): #modified
         board = chessboard()
-        while True:
+        while not (board.isWin() or board.isLose()):
             next_board = None
             # board.display()
             if board.round % 2 == color:
                 agent.count += 1
 
+                if board.isWin() or board.isLose():
+                    print('WTF')
                 action_idx = agent.choose_action(board)
                 action = index_to_action(board=board, index=action_idx)
                 next_board = board.get_NextState(action)
-                done = board.isWin() or board.isLose()
+                done = next_board.isWin() or next_board.isLose()
                 reward = eval_reward(board=board, action=action)
                 agent.buffer.insert(board_state_to_ndarray(board), action_idx, reward, next_state=board_state_to_ndarray(next_board), done=int(done))
-                if agent.count >= 1000:
+                if agent.count >= 40:
                     agent.learn()
+                board = next_board
             else:
-                next_board = oppo.Next_state(state=board, parameter=para)
-                done = board.isWin() or board.isLose()
-            if done:
-                break
-            board = next_board
-        if ( board.round == color and board.isWin() ) or ( board.round == 1-color and board.isLose() ):
+                board = oppo.Next_state(state=board, parameter=para)
+        if ( board.round % 2 == color and board.isWin() ) or ( board.round % 2 == 1-color and board.isLose() ):
             win_lose.append(1)
         else:
             win_lose.append(0)
@@ -222,4 +221,4 @@ def train_RL(color, episode, para):
     return win_lose
             
 if __name__ == "__main__":
-    train_RL(color=0, episode=100, para=[1,1,1,1,1,1])
+    train_RL(color=0, episode=1000, para=[1,1,1,1,1,1])
