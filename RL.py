@@ -97,8 +97,10 @@ def index_to_action(board, index):
         arr[2-i] = index % 25
         index = index // 25
     
-    add = { board.all_posi[arr[0] - 1] + (color, ) }
+    add = set()
     remove = set()
+    if arr[0] > 0:
+        add.add(board.all_posi[arr[0] - 1] + (color, ))
     if arr[1] > 0:
         remove.add(board.all_posi[arr[1] - 1] + (color, ))
     if arr[2] > 0:
@@ -199,9 +201,6 @@ def train_RL(color, episode, para):
             # board.display()
             if board.round % 2 == color:
                 agent.count += 1
-
-                if board.isWin() or board.isLose():
-                    print('WTF')
                 action_idx = agent.choose_action(board)
                 action = index_to_action(board=board, index=action_idx)
                 next_board = board.get_NextState(action)
