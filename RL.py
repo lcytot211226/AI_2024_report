@@ -219,9 +219,7 @@ def train_RL(color, episode, para):
         else:
             win_lose.append(0)
     
-    with open('RL_win.csv', 'w', newline='', encoding='utf-8') as file:
-        writer = csv.writer(file)
-        writer.writerows(win_lose)  
+    return win_lose
             
 if __name__ == "__main__":
     train_RL(color=0, episode=100, para=[1,1,1,1,1,1])
