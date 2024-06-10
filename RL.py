@@ -167,17 +167,21 @@ class Agent():
 
     def choose_action(self, board):
         with torch.no_grad():
+            # Get valid actions
+            valid_actions = board.get_Action()
+            if len(valid_actions) == 0:
+                return 0
+
             if random.random() < self.epsilon:
                 # Randomly choose a valid action
-                action = random.choice(list(board.get_Action()))
+                action = random.choice(list(valid_actions))
                 return action_to_index(board=board, action=action)
             
             # Predict Q-values for all actions
             state_tensor = torch.as_tensor(board_state_to_ndarray(board=board), dtype=torch.float32).unsqueeze(0)
             q_values = self.evaluate_net.forward(state_tensor).squeeze(0)
 
-            # Get valid actions
-            valid_actions = board.get_Action()
+
             valid_indices = [action_to_index(board=board, action=a) for a in valid_actions]
 
             # Create a mask of valid actions
