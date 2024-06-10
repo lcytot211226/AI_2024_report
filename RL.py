@@ -216,6 +216,9 @@ def train_RL(color, episode, para):
                 board = next_board
             else:
                 board = oppo.Next_state(state=board, parameter=para)
+
+            if len(board.get_Action()) == 0:
+                break
         if ( board.round % 2 == color and board.isWin() ) or ( board.round % 2 == 1-color and board.isLose() ):
             win_lose.append(1)
         else:
