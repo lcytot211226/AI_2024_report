@@ -97,8 +97,10 @@ def index_to_action(board, index):
         arr[2-i] = index % 25
         index = index // 25
     
-    add = { board.all_posi[arr[0] - 1] + (color, ) }
+    add = set()
     remove = set()
+    if arr[0] > 0:
+        add.add(board.all_posi[arr[0] - 1] + (color, ))
     if arr[1] > 0:
         remove.add(board.all_posi[arr[1] - 1] + (color, ))
     if arr[2] > 0:
@@ -165,17 +167,21 @@ class Agent():
 
     def choose_action(self, board):
         with torch.no_grad():
+            # Get valid actions
+            valid_actions = board.get_Action()
+            if len(valid_actions) == 0:
+                return 0
+
             if random.random() < self.epsilon:
                 # Randomly choose a valid action
-                action = random.choice(list(board.get_Action()))
+                action = random.choice(list(valid_actions))
                 return action_to_index(board=board, action=action)
             
             # Predict Q-values for all actions
             state_tensor = torch.as_tensor(board_state_to_ndarray(board=board), dtype=torch.float32).unsqueeze(0)
             q_values = self.evaluate_net.forward(state_tensor).squeeze(0)
 
-            # Get valid actions
-            valid_actions = board.get_Action()
+
             valid_indices = [action_to_index(board=board, action=a) for a in valid_actions]
 
             # Create a mask of valid actions
@@ -199,9 +205,6 @@ def train_RL(color, episode, para):
             # board.display()
             if board.round % 2 == color:
                 agent.count += 1
-
-                if board.isWin() or board.isLose():
-                    print('WTF')
                 action_idx = agent.choose_action(board)
                 action = index_to_action(board=board, index=action_idx)
                 next_board = board.get_NextState(action)
@@ -213,6 +216,9 @@ def train_RL(color, episode, para):
                 board = next_board
             else:
                 board = oppo.Next_state(state=board, parameter=para)
+
+            if len(board.get_Action()) == 0:
+                break
         if ( board.round % 2 == color and board.isWin() ) or ( board.round % 2 == 1-color and board.isLose() ):
             win_lose.append(1)
         else:
